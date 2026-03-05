@@ -1,0 +1,51 @@
+# HabitCraft/docker-compose.yml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: habitcraft-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: habitcraft-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  backend:
+    build: ./backend
+    container_name: habitcraft-backend
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - PORT=4000
+      - MONGO_URI=mongodb://admin:password@mongodb:27017/habitcraft?authSource=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=supersecret
+    restart: unless-stopped
+
+  admin:
+    build: ./admin
+    container_name: habitcraft-admin
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  redis-data:
